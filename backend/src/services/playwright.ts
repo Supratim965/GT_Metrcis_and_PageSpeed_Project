@@ -158,31 +158,30 @@ export async function validateAndAuditUrl(
       await autoScroll(page);
 
       log('Capturing Desktop above-the-fold screenshot...');
-      const aboveDesktopBuffer = await page.screenshot({ fullPage: false });
+      const aboveDesktopBuffer = await page.screenshot({ fullPage: false, type: 'jpeg', quality: 70 });
       screenshotDesktopAbove = aboveDesktopBuffer.toString('base64');
 
       log('Capturing Desktop full-page screenshot...');
-      const fullDesktopBuffer = await page.screenshot({ fullPage: true });
+      const fullDesktopBuffer = await page.screenshot({ fullPage: true, type: 'jpeg', quality: 70 });
       screenshotDesktopFull = fullDesktopBuffer.toString('base64');
 
-      // Emulate mobile configuration
+      // Emulate mobile configuration (reduced scale for speed)
       log('Emulating Mobile device...');
       const mobileContext = await browser.newContext({
         viewport: { width: 375, height: 667 },
         userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1',
-        deviceScaleFactor: 2,
+        deviceScaleFactor: 1,
         isMobile: true,
         hasTouch: true,
       });
 
       const mobilePage = await mobileContext.newPage();
-      await mobilePage.goto(url, { waitUntil: 'load', timeout: 15000 }).catch(() => {
-        log('Warning: Mobile redirection navigation timed out.');
+      await mobilePage.goto(url, { waitUntil: 'domcontentloaded', timeout: 10000 }).catch(() => {
+        log('Warning: Mobile navigation timed out.');
       });
-      await autoScroll(mobilePage);
 
       log('Capturing Mobile full-page screenshot...');
-      const fullMobileBuffer = await mobilePage.screenshot({ fullPage: true });
+      const fullMobileBuffer = await mobilePage.screenshot({ fullPage: true, type: 'jpeg', quality: 70 });
       screenshotMobileFull = fullMobileBuffer.toString('base64');
       await mobilePage.close();
       await mobileContext.close();
