@@ -164,27 +164,6 @@ export async function validateAndAuditUrl(
       log('Capturing Desktop full-page screenshot...');
       const fullDesktopBuffer = await page.screenshot({ fullPage: true, type: 'jpeg', quality: 70 });
       screenshotDesktopFull = fullDesktopBuffer.toString('base64');
-
-      // Emulate mobile configuration (reduced scale for speed)
-      log('Emulating Mobile device...');
-      const mobileContext = await browser.newContext({
-        viewport: { width: 375, height: 667 },
-        userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1',
-        deviceScaleFactor: 1,
-        isMobile: true,
-        hasTouch: true,
-      });
-
-      const mobilePage = await mobileContext.newPage();
-      await mobilePage.goto(url, { waitUntil: 'domcontentloaded', timeout: 10000 }).catch(() => {
-        log('Warning: Mobile navigation timed out.');
-      });
-
-      log('Capturing Mobile full-page screenshot...');
-      const fullMobileBuffer = await mobilePage.screenshot({ fullPage: true, type: 'jpeg', quality: 70 });
-      screenshotMobileFull = fullMobileBuffer.toString('base64');
-      await mobilePage.close();
-      await mobileContext.close();
     }
 
     await page.close();
