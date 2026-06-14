@@ -138,7 +138,7 @@ export async function validateAndAuditUrl(
     }
 
     // Wait for async JS to execute and potentially throw errors
-    await new Promise((r) => setTimeout(r, 2000));
+    await new Promise((r) => setTimeout(r, 5000));
 
     // Check for JavaScript errors (check on both SUCCESS and PARTIALLY_LOADED)
     if (((loadStatus as string) === 'SUCCESS' || (loadStatus as string) === 'PARTIALLY_LOADED') && jsErrors.length > 0) {
