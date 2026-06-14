@@ -167,7 +167,16 @@ export async function validateAndAuditUrl(
 
       log('Capturing Desktop full-page screenshot...');
       try {
-        const fullDesktopBuffer = await page.screenshot({ fullPage: true, type: 'jpeg', quality: 60, timeout: 20000 });
+        // Cap screenshot height to prevent OOM on limited servers
+        const pageHeight = await page.evaluate(() => document.body.scrollHeight);
+        const maxHeight = Math.min(pageHeight, 3000);
+        await page.evaluate(() => window.scrollTo(0, 0));
+        const fullDesktopBuffer = await page.screenshot({
+          type: 'jpeg',
+          quality: 60,
+          timeout: 20000,
+          clip: { x: 0, y: 0, width: 1280, height: maxHeight },
+        });
         screenshotDesktopFull = fullDesktopBuffer.toString('base64');
       } catch (e) {
         log('Warning: Full-page screenshot timed out, skipping.');
