@@ -158,12 +158,20 @@ export async function validateAndAuditUrl(
       await autoScroll(page);
 
       log('Capturing Desktop above-the-fold screenshot...');
-      const aboveDesktopBuffer = await page.screenshot({ fullPage: false, type: 'jpeg', quality: 70 });
-      screenshotDesktopAbove = aboveDesktopBuffer.toString('base64');
+      try {
+        const aboveDesktopBuffer = await page.screenshot({ fullPage: false, type: 'jpeg', quality: 70, timeout: 15000 });
+        screenshotDesktopAbove = aboveDesktopBuffer.toString('base64');
+      } catch (e) {
+        log('Warning: Above-the-fold screenshot timed out, skipping.');
+      }
 
       log('Capturing Desktop full-page screenshot...');
-      const fullDesktopBuffer = await page.screenshot({ fullPage: true, type: 'jpeg', quality: 70 });
-      screenshotDesktopFull = fullDesktopBuffer.toString('base64');
+      try {
+        const fullDesktopBuffer = await page.screenshot({ fullPage: true, type: 'jpeg', quality: 60, timeout: 20000 });
+        screenshotDesktopFull = fullDesktopBuffer.toString('base64');
+      } catch (e) {
+        log('Warning: Full-page screenshot timed out, skipping.');
+      }
     }
 
     await page.close();
