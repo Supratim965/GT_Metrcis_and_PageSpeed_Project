@@ -57,10 +57,15 @@ export async function validateAndAuditUrl(
 
     const page = await context.newPage();
     
-    // Listen for uncaught JavaScript errors
+    // Listen for uncaught JavaScript errors AND console.error() calls
     const jsErrors: Error[] = [];
     page.on('pageerror', (err) => {
       jsErrors.push(err);
+    });
+    page.on('console', (msg) => {
+      if (msg.type() === 'error') {
+        jsErrors.push(new Error(msg.text()));
+      }
     });
 
     // Timing tracking variables
@@ -132,8 +137,8 @@ export async function validateAndAuditUrl(
       errorMessage = `Server returned HTTP status code ${httpStatus}`;
     }
 
-    // Check for JavaScript errors
-    if (loadStatus === 'SUCCESS' && jsErrors.length > 0) {
+    // Check for JavaScript errors (check on both SUCCESS and PARTIALLY_LOADED)
+    if (((loadStatus as string) === 'SUCCESS' || (loadStatus as string) === 'PARTIALLY_LOADED') && jsErrors.length > 0) {
       loadStatus = 'JS_ERROR';
       errorMessage = `Caught ${jsErrors.length} JS errors: ${jsErrors[0].message}`;
     }
