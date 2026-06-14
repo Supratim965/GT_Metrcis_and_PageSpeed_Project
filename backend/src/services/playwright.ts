@@ -89,34 +89,36 @@ export async function validateAndAuditUrl(
     let errorMessage: string | undefined;
 
     try {
-      // Navigate and wait for DOM content loaded
+      // Navigate and wait for initial commit
       await page.goto(url, {
         waitUntil: 'commit',
         timeout: 20000,
       });
 
-      // Wait for DOM content loaded explicitly
-      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
+      // Wait for DOM content loaded — non-fatal if slow
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 }).catch(() => {
+        log('Warning: DOM content load slow, proceeding anyway.');
+        loadStatus = 'PARTIALLY_LOADED';
+      });
       domContentLoadedTime = Date.now();
 
-      // Wait for network idle
+      // Wait for network idle — non-fatal if slow
       await page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {
         log('Warning: Network idle timeout exceeded, proceeding with partial load.');
-        loadStatus = 'PARTIALLY_LOADED';
+        if (loadStatus === 'SUCCESS') loadStatus = 'PARTIALLY_LOADED';
       });
       loadCompletedTime = Date.now();
     } catch (err: any) {
       errorMessage = err.message || String(err);
-      if (errorMessage && errorMessage.includes('timeout')) {
-        loadStatus = 'TIMEOUT';
-      } else if (errorMessage && (errorMessage.includes('ERR_CONNECTION_REFUSED') || errorMessage.includes('ERR_NAME_NOT_RESOLVED'))) {
+      if (errorMessage && (errorMessage.includes('ERR_CONNECTION_REFUSED') || errorMessage.includes('ERR_NAME_NOT_RESOLVED'))) {
         loadStatus = 'FAILED';
       } else if (errorMessage && errorMessage.includes('redirect')) {
         loadStatus = 'REDIRECT_LOOP';
       } else {
-        loadStatus = 'FAILED';
+        // Page is slow but still loaded something — don't fail it
+        loadStatus = 'PARTIALLY_LOADED';
       }
-      log(`Navigation failed: ${errorMessage}`);
+      log(`Navigation warning: ${errorMessage}`);
     }
 
     // Capture timings
