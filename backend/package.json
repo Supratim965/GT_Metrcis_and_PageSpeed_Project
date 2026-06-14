@@ -1,0 +1,28 @@
+{
+  "name": "performance-audit-hub-backend",
+  "version": "1.0.0",
+  "description": "Backend engine for Performance Audit Hub using Playwright, Lighthouse, and Express",
+  "main": "dist/server.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "dev": "nodemon --watch src --ext ts --exec ts-node src/server.ts"
+  },
+  "dependencies": {
+    "bullmq": "^5.8.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "playwright": "^1.44.1",
+    "puppeteer": "^22.10.2",
+    "sql.js": "^1.10.3"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.12.12",
+    "nodemon": "^3.1.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.5"
+  }
+}
