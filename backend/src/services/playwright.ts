@@ -17,19 +17,19 @@ async function autoScroll(page: Page): Promise<void> {
   await page.evaluate(async () => {
     await new Promise<void>((resolve) => {
       let totalHeight = 0;
-      const distance = 100;
+      const distance = 200;
       const timer = setInterval(() => {
         const scrollHeight = document.body.scrollHeight;
         window.scrollBy(0, distance);
         totalHeight += distance;
 
-        if (totalHeight >= scrollHeight || totalHeight > 10000) { // Safety ceiling
+        if (totalHeight >= scrollHeight || totalHeight > 5000) { // Safety ceiling
           clearInterval(timer);
           // Scroll back to top
           window.scrollTo(0, 0);
           resolve();
         }
-      }, 100);
+      }, 60);
     });
   });
 }
@@ -96,11 +96,11 @@ export async function validateAndAuditUrl(
       });
 
       // Wait for DOM content loaded explicitly
-      await page.waitForLoadState('domcontentloaded', { timeout: 15000 });
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
       domContentLoadedTime = Date.now();
 
       // Wait for network idle
-      await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {
+      await page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {
         log('Warning: Network idle timeout exceeded, proceeding with partial load.');
         loadStatus = 'PARTIALLY_LOADED';
       });
@@ -176,7 +176,7 @@ export async function validateAndAuditUrl(
       });
 
       const mobilePage = await mobileContext.newPage();
-      await mobilePage.goto(url, { waitUntil: 'load', timeout: 25000 }).catch(() => {
+      await mobilePage.goto(url, { waitUntil: 'load', timeout: 15000 }).catch(() => {
         log('Warning: Mobile redirection navigation timed out.');
       });
       await autoScroll(mobilePage);
