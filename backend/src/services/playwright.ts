@@ -137,6 +137,9 @@ export async function validateAndAuditUrl(
       errorMessage = `Server returned HTTP status code ${httpStatus}`;
     }
 
+    // Wait for async JS to execute and potentially throw errors
+    await new Promise((r) => setTimeout(r, 2000));
+
     // Check for JavaScript errors (check on both SUCCESS and PARTIALLY_LOADED)
     if (((loadStatus as string) === 'SUCCESS' || (loadStatus as string) === 'PARTIALLY_LOADED') && jsErrors.length > 0) {
       loadStatus = 'JS_ERROR';
