@@ -152,34 +152,15 @@ export async function validateAndAuditUrl(
     let screenshotMobileFull = '';
     let screenshotDesktopAbove = '';
 
-    // If loaded successfully, capture screenshots
+    // If loaded successfully, capture a single viewport screenshot
     if ((loadStatus as string) === 'SUCCESS' || (loadStatus as string) === 'PARTIALLY_LOADED') {
-      log('Triggering auto-scroll for lazy loaders...');
-      await autoScroll(page);
-
-      log('Capturing Desktop above-the-fold screenshot...');
+      log('Capturing Desktop viewport screenshot...');
       try {
-        const aboveDesktopBuffer = await page.screenshot({ fullPage: false, type: 'jpeg', quality: 70, timeout: 15000 });
-        screenshotDesktopAbove = aboveDesktopBuffer.toString('base64');
+        const screenshotBuffer = await page.screenshot({ fullPage: false, type: 'jpeg', quality: 70, timeout: 15000 });
+        screenshotDesktopAbove = screenshotBuffer.toString('base64');
+        screenshotDesktopFull = screenshotDesktopAbove; // Use same for both
       } catch (e) {
-        log('Warning: Above-the-fold screenshot timed out, skipping.');
-      }
-
-      log('Capturing Desktop full-page screenshot...');
-      try {
-        // Cap screenshot height to prevent OOM on limited servers
-        const pageHeight = await page.evaluate(() => document.body.scrollHeight);
-        const maxHeight = Math.min(pageHeight, 3000);
-        await page.evaluate(() => window.scrollTo(0, 0));
-        const fullDesktopBuffer = await page.screenshot({
-          type: 'jpeg',
-          quality: 60,
-          timeout: 20000,
-          clip: { x: 0, y: 0, width: 1280, height: maxHeight },
-        });
-        screenshotDesktopFull = fullDesktopBuffer.toString('base64');
-      } catch (e) {
-        log('Warning: Full-page screenshot timed out, skipping.');
+        log('Warning: Screenshot timed out, skipping.');
       }
     }
 
