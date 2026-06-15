@@ -137,7 +137,25 @@ export async function validateAndAuditUrl(
       errorMessage = `Server returned HTTP status code ${httpStatus}`;
     }
 
-    // JS errors don't fail the audit — page still loaded
+    // Wait for async JS to execute and potentially throw errors
+    await new Promise((r) => setTimeout(r, 5000));
+
+    // Check for JS errors — image load failures get PARTIALLY_LOADED, others get JS_ERROR
+    if (((loadStatus as string) === 'SUCCESS' || (loadStatus as string) === 'PARTIALLY_LOADED') && jsErrors.length > 0) {
+      const imageExtensions = /\.(jpg|jpeg|png|gif|webp|svg|ico|bmp|avif)/i;
+      const imageErrors = jsErrors.filter((e) => imageExtensions.test(e.message));
+      const nonImageErrors = jsErrors.filter((e) => !imageExtensions.test(e.message));
+
+      if (nonImageErrors.length > 0) {
+        // Real JS errors → fail
+        loadStatus = 'JS_ERROR';
+        errorMessage = `Caught ${nonImageErrors.length} JS errors: ${nonImageErrors[0].message}`;
+      } else if (imageErrors.length > 0) {
+        // Only image load failures → partially loaded
+        loadStatus = 'PARTIALLY_LOADED';
+        errorMessage = `${imageErrors.length} images failed to load`;
+      }
+    }
 
     // Check if page is blank
     if ((loadStatus as string) === 'SUCCESS' || (loadStatus as string) === 'PARTIALLY_LOADED') {
