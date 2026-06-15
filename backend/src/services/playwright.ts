@@ -137,15 +137,7 @@ export async function validateAndAuditUrl(
       errorMessage = `Server returned HTTP status code ${httpStatus}`;
     }
 
-    // Wait for async JS to execute and potentially throw errors
-    await new Promise((r) => setTimeout(r, 5000));
-
-    // Check for 404 resource errors only (ignore other JS errors)
-    const critical404Errors = jsErrors.filter((e) => e.message.includes('404') || e.message.includes('Not Found'));
-    if (((loadStatus as string) === 'SUCCESS' || (loadStatus as string) === 'PARTIALLY_LOADED') && critical404Errors.length > 0) {
-      loadStatus = 'JS_ERROR';
-      errorMessage = `Caught ${critical404Errors.length} JS errors: ${critical404Errors[0].message}`;
-    }
+    // JS errors don't fail the audit — page still loaded
 
     // Check if page is blank
     if ((loadStatus as string) === 'SUCCESS' || (loadStatus as string) === 'PARTIALLY_LOADED') {
