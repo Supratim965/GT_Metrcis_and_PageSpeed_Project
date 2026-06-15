@@ -140,10 +140,11 @@ export async function validateAndAuditUrl(
     // Wait for async JS to execute and potentially throw errors
     await new Promise((r) => setTimeout(r, 5000));
 
-    // Check for JavaScript errors (check on both SUCCESS and PARTIALLY_LOADED)
-    if (((loadStatus as string) === 'SUCCESS' || (loadStatus as string) === 'PARTIALLY_LOADED') && jsErrors.length > 0) {
+    // Check for 404 resource errors only (ignore other JS errors)
+    const critical404Errors = jsErrors.filter((e) => e.message.includes('404') || e.message.includes('Not Found'));
+    if (((loadStatus as string) === 'SUCCESS' || (loadStatus as string) === 'PARTIALLY_LOADED') && critical404Errors.length > 0) {
       loadStatus = 'JS_ERROR';
-      errorMessage = `Caught ${jsErrors.length} JS errors: ${jsErrors[0].message}`;
+      errorMessage = `Caught ${critical404Errors.length} JS errors: ${critical404Errors[0].message}`;
     }
 
     // Check if page is blank
