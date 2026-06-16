@@ -137,34 +137,15 @@ export async function validateAndAuditUrl(
       errorMessage = `Server returned HTTP status code ${httpStatus}`;
     }
 
-    // Wait for async JS to execute and potentially throw errors
-    await new Promise((r) => setTimeout(r, 5000));
-
-    // Check for JS errors — non-critical errors get PARTIALLY_LOADED, critical ones get JS_ERROR
+    // Check for JS errors — only blocker errors (SyntaxError) fail the page
     if (((loadStatus as string) === 'SUCCESS' || (loadStatus as string) === 'PARTIALLY_LOADED') && jsErrors.length > 0) {
-      // Non-critical patterns: broken images, common runtime glitches, third-party scripts
-      const nonCriticalPatterns = [
-        /\.(jpg|jpeg|png|gif|webp|svg|ico|bmp|avif)/i,  // broken images
-        /Cannot read properties of (null|undefined)/i,   // DOM element not found
-        /is not a function/i,                            // method call on wrong type
-        /is not defined/i,                               // undefined variable
-        /Failed to load resource/i,                      // resource load failure
-        /Loading chunk .* failed/i,                      // webpack chunk failures
-        /Script error/i,                                 // cross-origin script errors
-        /ResizeObserver/i,                               // resize observer warnings
-        /Third-party cookie/i,                           // cookie warnings
-      ];
+      const blockerErrors = jsErrors.filter((e) => /SyntaxError/i.test(e.message));
 
-      const isCritical = (msg: string) => !nonCriticalPatterns.some((p) => p.test(msg));
-      const criticalErrors = jsErrors.filter((e) => isCritical(e.message));
-
-      if (criticalErrors.length > 0) {
+      if (blockerErrors.length > 0) {
         loadStatus = 'JS_ERROR';
-        errorMessage = `Caught ${criticalErrors.length} JS errors: ${criticalErrors[0].message}`;
+        errorMessage = `Blocker JS error: ${blockerErrors[0].message}`;
       } else {
-        // All errors are non-critical — page still works
         loadStatus = 'PARTIALLY_LOADED';
-        errorMessage = `${jsErrors.length} non-critical JS warnings detected`;
       }
     }
 
