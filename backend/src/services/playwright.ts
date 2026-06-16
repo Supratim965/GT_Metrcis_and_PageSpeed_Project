@@ -140,20 +140,31 @@ export async function validateAndAuditUrl(
     // Wait for async JS to execute and potentially throw errors
     await new Promise((r) => setTimeout(r, 5000));
 
-    // Check for JS errors — image load failures get PARTIALLY_LOADED, others get JS_ERROR
+    // Check for JS errors — non-critical errors get PARTIALLY_LOADED, critical ones get JS_ERROR
     if (((loadStatus as string) === 'SUCCESS' || (loadStatus as string) === 'PARTIALLY_LOADED') && jsErrors.length > 0) {
-      const imageExtensions = /\.(jpg|jpeg|png|gif|webp|svg|ico|bmp|avif)/i;
-      const imageErrors = jsErrors.filter((e) => imageExtensions.test(e.message));
-      const nonImageErrors = jsErrors.filter((e) => !imageExtensions.test(e.message));
+      // Non-critical patterns: broken images, common runtime glitches, third-party scripts
+      const nonCriticalPatterns = [
+        /\.(jpg|jpeg|png|gif|webp|svg|ico|bmp|avif)/i,  // broken images
+        /Cannot read properties of (null|undefined)/i,   // DOM element not found
+        /is not a function/i,                            // method call on wrong type
+        /is not defined/i,                               // undefined variable
+        /Failed to load resource/i,                      // resource load failure
+        /Loading chunk .* failed/i,                      // webpack chunk failures
+        /Script error/i,                                 // cross-origin script errors
+        /ResizeObserver/i,                               // resize observer warnings
+        /Third-party cookie/i,                           // cookie warnings
+      ];
 
-      if (nonImageErrors.length > 0) {
-        // Real JS errors → fail
+      const isCritical = (msg: string) => !nonCriticalPatterns.some((p) => p.test(msg));
+      const criticalErrors = jsErrors.filter((e) => isCritical(e.message));
+
+      if (criticalErrors.length > 0) {
         loadStatus = 'JS_ERROR';
-        errorMessage = `Caught ${nonImageErrors.length} JS errors: ${nonImageErrors[0].message}`;
-      } else if (imageErrors.length > 0) {
-        // Only image load failures → partially loaded
+        errorMessage = `Caught ${criticalErrors.length} JS errors: ${criticalErrors[0].message}`;
+      } else {
+        // All errors are non-critical — page still works
         loadStatus = 'PARTIALLY_LOADED';
-        errorMessage = `${imageErrors.length} images failed to load`;
+        errorMessage = `${jsErrors.length} non-critical JS warnings detected`;
       }
     }
 
