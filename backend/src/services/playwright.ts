@@ -159,7 +159,7 @@ export async function validateAndAuditUrl(
       });
 
       if (has404InPage) {
-        loadStatus = 'PARTIALLY_LOADED';
+        loadStatus = 'JS_ERROR';
         errorMessage = '404 content detected on page after scrolling';
       }
     }
