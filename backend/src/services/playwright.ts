@@ -137,6 +137,33 @@ export async function validateAndAuditUrl(
       errorMessage = `Server returned HTTP status code ${httpStatus}`;
     }
 
+    // Scroll down to trigger lazy-loaded content that might show 404 errors
+    if ((loadStatus as string) === 'SUCCESS' || (loadStatus as string) === 'PARTIALLY_LOADED') {
+      log('Scrolling page to trigger lazy content...');
+      await page.evaluate(async () => {
+        const step = 300;
+        const maxScroll = Math.min(document.body.scrollHeight, 3000);
+        for (let y = 0; y < maxScroll; y += step) {
+          window.scrollTo(0, y);
+          await new Promise((r) => setTimeout(r, 100));
+        }
+      });
+
+      // Wait 5 seconds for lazy content and errors to fire
+      await new Promise((r) => setTimeout(r, 5000));
+
+      // Check for visible 404 text on the page
+      const has404InPage = await page.evaluate(() => {
+        const bodyText = document.body ? document.body.innerText : '';
+        return /404|not found|page not found/i.test(bodyText);
+      });
+
+      if (has404InPage) {
+        loadStatus = 'PARTIALLY_LOADED';
+        errorMessage = '404 content detected on page after scrolling';
+      }
+    }
+
     // Check for JS errors — only blocker errors (SyntaxError) fail the page
     if (((loadStatus as string) === 'SUCCESS' || (loadStatus as string) === 'PARTIALLY_LOADED') && jsErrors.length > 0) {
       const blockerErrors = jsErrors.filter((e) => /SyntaxError/i.test(e.message));
